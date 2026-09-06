@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RACEWORLD — Every Race. Every Circuit. Every Moment.</title>
+<meta name="description" content="RACEWORLD — a global motorsport discovery platform.">
+
+<!-- Fonts: Space Grotesk (display) + Inter (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- GSAP + ScrollTrigger (loaded from CDN at runtime in the visitor's browser) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+/* ==========================================================================
+   0. DESIGN TOKENS
+   ========================================================================== */
+:root{
+  --pearl:       #f6f7f9;
+  --pearl-2:     #eef1f5;
+  --silver:      #c9d0da;
+  --silver-2:    #dde2e9;
+  --charcoal:    #12151b;
+  --charcoal-70: rgba(18,21,27,.7);
+  --charcoal-45: rgba(18,21,27,.45);
+  --electric:    #2f5cff;
+  --electric-2:  #6a8bff;
+  --sky:         #e8effc;
+  --red:         #d91e36;
+
+  --glass-fill:  rgba(255,255,255,.55);
+  --glass-edge:  rgba(255,255,255,.85);
+  --glass-shadow:rgba(18,21,27,.10);
+
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --ease-out: cubic-bezier(.16,.84,.44,1);
+  --track-w: 96px; /* width reserved for the scroll-race spine on desktop */
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:auto;}
+body{
+  margin:0;
+  background:var(--pearl);
+  color:var(--charcoal);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+::selection{background:var(--electric);color:#fff;}
+
+.rw-container{
+  max-width:1220px;
+  margin:0 auto;
+  padding:0 32px;
+}
+@media (max-width:720px){ .rw-container{padding:0 20px;} }
+
+.rw-eyebrow{
+  font-family:var(--font-display);
+  font-size:13px;
+  letter-spacing:.04em;
+  color:var(--electric);
+  font-weight:600;
+  margin:0 0 10px;
+}
+.rw-h2{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:clamp(28px,3.4vw,44px);
+  line-height:1.08;
+  margin:0 0 14px;
+  letter-spacing:-.01em;
+}
+.rw-sub{
+  font-size:16px;
+  line-height:1.6;
+  color:var(--charcoal-70);
+  max-width:560px;
+  margin:0 0 36px;
+}
+.rw-section{
+  position:relative;
+  padding:96px 0;
+}
+@media (max-width:720px){ .rw-section{padding:64px 0;} }
+
+.rw-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:14px 26px;
+  border-radius:999px;
+  font-weight:600;
+  font-size:14.5px;
+  border:1px solid transparent;
+  transition:transform .35s var(--ease-out), box-shadow .35s var(--ease-out), background .35s;
+}
+.rw-btn:hover{transform:translateY(-2px);}
+.rw-btn-primary{
+  background:var(--charcoal);
+  color:#fff;
+  box-shadow:0 10px 24px -8px rgba(18,21,27,.45);
+}
+.rw-btn-primary:hover{box-shadow:0 16px 30px -8px rgba(18,21,27,.55);}
+.rw-btn-ghost{
+  background:rgba(255,255,255,.5);
+  border-color:rgba(18,21,27,.14);
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+}
+.rw-btn-ghost:hover{background:rgba(255,255,255,.75);}
+
+.rw-tag{
+  font-size:11.5px;
+  font-weight:600;
+  letter-spacing:.03em;
+  padding:5px 10px;
+  border-radius:999px;
+  background:var(--sky);
+  color:var(--electric);
+}
+.rw-demo-tag{background:var(--pearl-2); color:var(--charcoal-45);}
+
+/* ==========================================================================
+   1. LOADING SCREEN
+   ========================================================================== */
+#rw-loader{
+  position:fixed; inset:0; z-index:9999;
+  background:var(--pearl);
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity .6s var(--ease-out), visibility .6s;
+}
+#rw-loader.is-hidden{opacity:0; visibility:hidden; pointer-events:none;}
+.rw-loader-wrap{ text-align:center; }
+.rw-loader-line{
+  width:220px; height:2px; background:var(--silver-2); position:relative; margin:0 auto 22px;
+  overflow:hidden; border-radius:2px;
+}
+.rw-loader-line::after{
+  content:""; position:absolute; top:0; left:-40%; width:40%; height:100%;
+  background:linear-gradient(90deg,transparent,var(--electric),transparent);
+  animation:rwSweep 1.1s ease-in-out infinite;
+}
+@keyframes rwSweep{ to{ left:110%; } }
+.rw-loader-word{
+  font-family:var(--font-display); font-weight:700; font-size:15px;
+  letter-spacing:.14em; color:var(--charcoal);
+  opacity:0; transform:translateY(6px);
+  animation:rwFadeUp .6s var(--ease-out) .3s forwards;
+}
+@keyframes rwFadeUp{ to{opacity:1; transform:none;} }
+
+/* ==========================================================================
+   2. NAVIGATION (transforms into Liquid Glass on scroll)
+   ========================================================================== */
+#rw-nav{
+  position:fixed; top:0; left:0; right:0; z-index:500;
+  padding:22px 0;
+  transition:padding .4s var(--ease-out);
+}
+#rw-nav .rw-nav-inner{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 22px;
+  border-radius:999px;
+  transition:background .4s var(--ease-out), box-shadow .4s var(--ease-out), backdrop-filter .4s, border-color .4s;
+  border:1px solid transparent;
+}
+#rw-nav.is-scrolled{ padding:14px 0; }
+#rw-nav.is-scrolled .rw-nav-inner{
+  background:var(--glass-fill);
+  border-color:rgba(255,255,255,.6);
+  box-shadow:0 12px 30px -14px var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.6);
+  backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+}
+.rw-logo{
+  font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:.01em;
+  display:flex; align-items:center; gap:8px;
+}
+.rw-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;}
+.rw-nav-links{ display:flex; gap:26px; list-style:none; margin:0; padding:0; }
+.rw-nav-links a{
+  font-size:14px; font-weight:500; color:var(--charcoal-70);
+  position:relative; padding-bottom:3px; transition:color .25s;
+}
+.rw-nav-links a::after{
+  content:""; position:absolute; left:0; right:100%; bottom:0; height:1.5px; background:var(--charcoal);
+  transition:right .3s var(--ease-out);
+}
+.rw-nav-links a:hover{ color:var(--charcoal); }
+.rw-nav-links a:hover::after{ right:0; }
+.rw-nav-right{ display:flex; align-items:center; gap:16px; }
+.rw-icon-btn{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(18,21,27,.12); background:rgba(255,255,255,.4);
+  transition:transform .3s var(--ease-out), background .3s;
+}
+.rw-icon-btn:hover{ transform:translateY(-2px); background:#fff; }
+@media (max-width:900px){
+  .rw-nav-links{ display:none; }
+}
+
+/* ==========================================================================
+   3. HERO — shader-style canvas + car + speed lines
+   ========================================================================== */
+#rw-hero{
+  position:relative;
+  height:100svh;
+  min-height:640px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+}
+#rw-hero-canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  z-index:0;
+}
+.rw-hero-wash{
+  position:absolute; inset:0; z-index:1;
+  background:linear-gradient(180deg, rgba(246,247,249,0) 0%, rgba(246,247,249,.2) 60%, var(--pearl) 100%);
+  pointer-events:none;
+}
+.rw-hero-content{
+  position:relative; z-index:2; width:100%;
+}
+.rw-hero-grid{
+  display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:24px;
+}
+@media (max-width:900px){ .rw-hero-grid{ grid-template-columns:1fr; } }
+
+.rw-hero-title{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(48px,7.4vw,96px);
+  line-height:.94;
+  letter-spacing:-.02em;
+  margin:0 0 20px;
+  color:var(--charcoal);
+}
+.rw-hero-tagline{
+  font-family:var(--font-display);
+  font-size:clamp(13px,1.3vw,16px);
+  font-weight:600;
+  letter-spacing:.16em;
+  color:var(--charcoal-70);
+  margin:0 0 28px;
+}
+.rw-hero-actions{ display:flex; gap:14px; flex-wrap:wrap; }
+
+.rw-hero-car-wrap{
+  position:relative;
+  height:340px;
+}
+#rw-hero-car{
+  position:absolute; right:-6%; top:50%; width:118%;
+  transform:translateY(-46%);
+  filter:drop-shadow(0 30px 40px rgba(18,21,27,.25));
+}
+.rw-speedline{
+  position:absolute; height:2px; right:0;
+  background:linear-gradient(90deg, transparent, rgba(47,92,255,.55));
+  border-radius:2px;
+  opacity:0;
+}
+@media (max-width:900px){ .rw-hero-car-wrap{ height:220px; margin-top:12px; } }
+
+.rw-scroll-cue{
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  z-index:2; font-size:11px; letter-spacing:.12em; color:var(--charcoal-45); font-weight:600;
+}
+.rw-scroll-cue .rw-mouse{
+  width:22px;height:34px;border-radius:14px;border:1.5px solid var(--charcoal-45);
+  position:relative;
+}
+.rw-scroll-cue .rw-mouse::after{
+  content:""; position:absolute; top:6px; left:50%; width:3px; height:7px; border-radius:2px;
+  background:var(--charcoal-45); transform:translateX(-50%);
+  animation:rwScrollDot 1.6s ease-in-out infinite;
+}
+@keyframes rwScrollDot{ 0%{opacity:1; transform:translate(-50%,0);} 70%{opacity:0; transform:translate(-50%,10px);} 100%{opacity:0;} }
+
+/* ==========================================================================
+   4. SCROLL-DRIVEN RACING TRACK (spine + moving car marker)
+   ========================================================================== */
+#rw-track-layer{
+  position:fixed;
+  top:0; right:14px;
+  width:var(--track-w);
+  height:100vh;
+  z-index:60;
+  pointer-events:none;
+}
+#rw-track-svg{ width:100%; height:100%; overflow:visible; }
+#rw-track-path{
+  fill:none; stroke:var(--silver); stroke-width:2.5; stroke-linecap:round;
+}
+#rw-track-progress{
+  fill:none; stroke:var(--electric); stroke-width:2.5; stroke-linecap:round;
+}
+#rw-track-car{
+  width:34px; height:auto;
+  filter:drop-shadow(0 6px 10px rgba(18,21,27,.3));
+  will-change:transform;
+}
+.rw-track-flag{
+  position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  font-size:16px;
+}
+@media (max-width:900px){
+  #rw-track-layer{ display:none; } /* simplified experience on mobile per spec */
+}
+
+/* ==========================================================================
+   5. LIQUID GLASS (reusable surface used across cards/panels)
+   ========================================================================== */
+.rw-glass{
+  position:relative;
+  background:var(--glass-fill);
+  border:1px solid var(--glass-edge);
+  border-radius:var(--radius-lg);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  box-shadow:0 20px 40px -20px var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.7);
+  overflow:hidden;
+}
+.rw-glass::before{
+  /* refraction highlight sweep */
+  content:"";
+  position:absolute; inset:0;
+  background:linear-gradient(120deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(255,255,255,.35) 100%);
+  mix-blend-mode:overlay;
+  pointer-events:none;
+}
+
+/* ==========================================================================
+   6. LIVE ON TRACK
+   ========================================================================== */
+.rw-live-badge{
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--font-display); font-weight:600; font-size:12.5px; letter-spacing:.05em;
+  color:var(--red); background:rgba(217,30,54,.08); padding:6px 12px; border-radius:999px;
+}
+.rw-live-dot{ width:7px;height:7px;border-radius:50%;background:var(--red); animation:rwPulse 1.4s ease-in-out infinite; }
+@keyframes rwPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(217,30,54,.5);} 50%{box-shadow:0 0 0 6px rgba(217,30,54,0);} }
+
+.rw-live-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+@media (max-width:900px){ .rw-live-grid{ grid-template-columns:1fr; } }
+.rw-live-card{ padding:22px; }
+.rw-live-card-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+.rw-live-card h3{ font-family:var(--font-display); font-size:19px; margin:2px 0 4px; }
+.rw-live-meta{ font-size:13px; color:var(--charcoal-70); }
+.rw-live-session{
+  font-size:12.5px; font-weight:600; color:var(--electric); background:var(--sky);
+  padding:4px 10px; border-radius:999px;
+}
+.rw-empty-state{
+  text-align:center; padding:48px 24px; color:var(--charcoal-45);
+  font-family:var(--font-display); letter-spacing:.05em; font-size:13px; font-weight:600;
+}
+
+/* ==========================================================================
+   7. NEXT ON THE GRID (upcoming events)
+   ========================================================================== */
+.rw-events-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+@media (max-width:980px){ .rw-events-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px){ .rw-events-grid{ grid-template-columns:1fr; } }
+
+.rw-event-card{
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  background:#fff;
+  border:1px solid rgba(18,21,27,.06);
+  transition:transform .4s var(--ease-out), box-shadow .4s var(--ease-out);
+}
+.rw-event-card:hover{ transform:translateY(-6px); box-shadow:0 24px 40px -20px rgba(18,21,27,.25); }
+.rw-event-media{
+  height:150px; position:relative; overflow:hidden;
+  background:linear-gradient(135deg,var(--sky),var(--pearl-2));
+}
+.rw-event-media svg{ width:100%; height:100%; transition:transform .6s var(--ease-out); }
+.rw-event-card:hover .rw-event-media svg{ transform:scale(1.08); }
+.rw-event-body{ padding:18px 20px 20px; }
+.rw-event-cat{ font-size:11.5px; font-weight:600; color:var(--electric); letter-spacing:.03em; margin-bottom:6px; }
+.rw-event-body h3{ font-family:var(--font-display); font-size:18px; margin:0 0 6px; }
+.rw-event-meta{ font-size:13px; color:var(--charcoal-70); margin-bottom:14px; }
+.rw-event-foot{ display:flex; justify-content:space-between; align-items:center; }
+.rw-countdown{ font-family:var(--font-display); font-weight:600; font-size:13px; color:var(--charcoal); }
+
+/* ==========================================================================
+   8. GLOBAL RACING MAP
+   ========================================================================== */
+.rw-map-panel{ position:relative; border-radius:var(--radius-lg); overflow:hidden; padding:0; }
+#rw-map-svg{ width:100%; height:auto; display:block; }
+.rw-map-land{ fill:#dfe4eb; }
+.rw-map-marker{ cursor:pointer; }
+.rw-map-marker circle.rw-marker-core{ fill:var(--electric); }
+.rw-map-marker circle.rw-marker-pulse{
+  fill:none; stroke:var(--electric); stroke-width:1.4; opacity:.6;
+  transform-origin:center; animation:rwMapPulse 2.4s ease-out infinite;
+}
+@keyframes rwMapPulse{ 0%{ transform:scale(.4); opacity:.7;} 100%{ transform:scale(2.6); opacity:0; } }
+.rw-map-tooltip{
+  position:absolute; padding:12px 14px; min-width:170px;
+  pointer-events:none; opacity:0; transform:translate(-50%,-120%);
+  transition:opacity .2s;
+  font-size:12.5px;
+}
+.rw-map-tooltip.is-visible{ opacity:1; }
+.rw-map-tooltip strong{ display:block; font-family:var(--font-display); font-size:13.5px; margin-bottom:3px; }
+
+/* ==========================================================================
+   9. CATEGORIES (horizontal scroll)
+   ========================================================================== */
+.rw-cat-scroll{
+  display:flex; gap:16px; overflow-x:auto; padding:6px 4px 22px;
+  scroll-snap-type:x proximity;
+}
+.rw-cat-scroll::-webkit-scrollbar{ height:6px; }
+.rw-cat-scroll::-webkit-scrollbar-thumb{ background:var(--silver); border-radius:4px; }
+.rw-cat-card{
+  scroll-snap-align:start;
+  min-width:180px;
+  padding:22px 18px;
+  border-radius:var(--radius-md);
+  background:linear-gradient(160deg,#fff,var(--pearl-2));
+  border:1px solid rgba(18,21,27,.06);
+  transition:transform .35s var(--ease-out), border-color .35s;
+}
+.rw-cat-card:hover{ transform:translateY(-4px); border-color:var(--electric-2); }
+.rw-cat-icon{ font-size:26px; margin-bottom:14px; display:block; }
+.rw-cat-card h4{ font-family:var(--font-display); font-size:15px; margin:0 0 4px; }
+.rw-cat-card span{ font-size:12px; color:var(--charcoal-45); }
+
+/* ==========================================================================
+   10. CALENDAR
+   ========================================================================== */
+.rw-cal-toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+.rw-filter-chip{
+  padding:8px 16px; border-radius:999px; font-size:13px; font-weight:600;
+  border:1px solid rgba(18,21,27,.12); background:#fff; color:var(--charcoal-70);
+  transition:all .25s;
+}
+.rw-filter-chip.is-active{ background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+.rw-cal-list{ display:flex; flex-direction:column; border-radius:var(--radius-lg); overflow:hidden; border:1px solid rgba(18,21,27,.06); background:#fff; }
+.rw-cal-row{
+  display:grid; grid-template-columns:90px 1fr auto; gap:16px; align-items:center;
+  padding:16px 22px; border-bottom:1px solid rgba(18,21,27,.06);
+  transition:background .25s;
+}
+.rw-cal-row:last-child{ border-bottom:none; }
+.rw-cal-row:hover{ background:var(--pearl-2); cursor:pointer; }
+.rw-cal-date{ font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--charcoal-70); }
+.rw-cal-date b{ display:block; font-size:19px; color:var(--charcoal); }
+.rw-cal-info h4{ margin:0 0 3px; font-size:15px; font-family:var(--font-display); }
+.rw-cal-info span{ font-size:12.5px; color:var(--charcoal-45); }
+
+/* ==========================================================================
+   11. RACING MEDIA (videos)
+   ========================================================================== */
+.rw-video-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+@media (max-width:980px){ .rw-video-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px){ .rw-video-grid{ grid-template-columns:1fr; } }
+.rw-video-card{ border-radius:var(--radius-md); overflow:hidden; background:#fff; border:1px solid rgba(18,21,27,.06); }
+.rw-video-thumb{
+  position:relative; height:150px;
+  background:linear-gradient(150deg,var(--charcoal),#2a2f3a);
+  display:flex; align-items:center; justify-content:center;
+}
+.rw-play-btn{
+  width:46px;height:46px;border-radius:50%; background:rgba(255,255,255,.92);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .3s var(--ease-out);
+}
+.rw-video-card:hover .rw-play-btn{ transform:scale(1.1); }
+.rw-video-dur{ position:absolute; bottom:8px; right:10px; font-size:11px; color:#fff; background:rgba(0,0,0,.5); padding:2px 6px; border-radius:4px; }
+.rw-video-body{ padding:14px 16px 16px; }
+.rw-video-body h4{ font-size:14.5px; margin:0 0 5px; font-family:var(--font-display); }
+.rw-video-body span{ font-size:12px; color:var(--charcoal-45); }
+
+/* ==========================================================================
+   12. PEOPLE / TEAM / CIRCUIT CARDS
+   ========================================================================== */
+.rw-people-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+@media (max-width:980px){ .rw-people-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:520px){ .rw-people-grid{ grid-template-columns:1fr; } }
+.rw-driver-card{
+  padding:20px; border-radius:var(--radius-md); background:#fff; border:1px solid rgba(18,21,27,.06);
+  transition:transform .35s var(--ease-out);
+}
+.rw-driver-card:hover{ transform:translateY(-4px); }
+.rw-driver-avatar{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(150deg,var(--electric),var(--electric-2));
+  display:flex; align-items:center; justify-content:center; color:#fff; font-family:var(--font-display); font-weight:700;
+  margin-bottom:14px;
+}
+.rw-driver-card h4{ margin:0 0 3px; font-size:15.5px; font-family:var(--font-display); }
+.rw-driver-card span{ font-size:12.5px; color:var(--charcoal-45); display:block; margin-bottom:12px; }
+.rw-driver-stats{ display:flex; gap:14px; }
+.rw-driver-stats div{ text-align:left; }
+.rw-driver-stats b{ display:block; font-family:var(--font-display); font-size:17px; }
+.rw-driver-stats small{ font-size:10.5px; color:var(--charcoal-45); letter-spacing:.03em; }
+
+/* ==========================================================================
+   13. NEWS + MY RACING
+   ========================================================================== */
+.rw-news-grid{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:20px; }
+@media (max-width:900px){ .rw-news-grid{ grid-template-columns:1fr; } }
+.rw-news-card{ border-radius:var(--radius-md); overflow:hidden; background:#fff; border:1px solid rgba(18,21,27,.06); }
+.rw-news-media{ height:150px; background:linear-gradient(160deg,var(--sky),var(--pearl-2)); }
+.rw-news-body{ padding:18px 20px; }
+.rw-news-body span{ font-size:11.5px; color:var(--electric); font-weight:600; }
+.rw-news-body h4{ font-family:var(--font-display); font-size:16px; margin:8px 0; }
+.rw-news-body p{ font-size:13px; color:var(--charcoal-70); line-height:1.5; margin:0; }
+
+.rw-myracing-panel{ padding:36px; display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+@media (max-width:760px){ .rw-myracing-panel{ grid-template-columns:1fr; } }
+.rw-fav-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(18,21,27,.08); }
+.rw-fav-row:last-child{ border-bottom:none; }
+.rw-star{ color:var(--electric); }
+
+/* ==========================================================================
+   14. FINISH LINE
+   ========================================================================== */
+#rw-finish{
+  position:relative; padding:120px 0 90px; text-align:center; overflow:hidden;
+  background:linear-gradient(180deg,var(--pearl) 0%, #fff 100%);
+}
+.rw-finish-checker{
+  width:100%; height:14px;
+  background-image:
+    linear-gradient(45deg, var(--charcoal) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--charcoal) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--charcoal) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--charcoal) 75%);
+  background-size:14px 14px;
+  background-position:0 0, 0 7px, 7px -7px, -7px 0px;
+  opacity:.85;
+  margin-bottom:36px;
+}
+#rw-finish h2{ font-family:var(--font-display); font-weight:700; font-size:clamp(30px,5vw,52px); margin:0 0 14px; }
+#rw-finish p{ color:var(--charcoal-70); max-width:480px; margin:0 auto 30px; }
+.rw-finish-glow{
+  position:absolute; top:20%; left:50%; width:600px; height:600px; transform:translateX(-50%);
+  background:radial-gradient(circle, rgba(47,92,255,.14), transparent 70%);
+  pointer-events:none;
+}
+
+/* ==========================================================================
+   15. FOOTER
+   ========================================================================== */
+#rw-footer{ background:var(--charcoal); color:rgba(255,255,255,.85); padding:64px 0 30px; }
+.rw-footer-top{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:40px; margin-bottom:50px; }
+.rw-footer-brand .rw-logo{ color:#fff; }
+.rw-footer-brand p{ color:rgba(255,255,255,.5); font-size:13.5px; max-width:260px; margin-top:10px; }
+.rw-footer-cols{ display:flex; gap:60px; flex-wrap:wrap; }
+.rw-footer-col h5{ font-size:12px; letter-spacing:.05em; color:rgba(255,255,255,.4); margin:0 0 14px; font-weight:600; }
+.rw-footer-col a{ display:block; font-size:14px; color:rgba(255,255,255,.75); margin-bottom:10px; transition:color .2s; }
+.rw-footer-col a:hover{ color:#fff; }
+.rw-footer-bottom{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
+  padding-top:26px; border-top:1px solid rgba(255,255,255,.12);
+  font-size:12.5px; color:rgba(255,255,255,.4);
+}
+.rw-footer-line{
+  height:2px; width:100%; margin-bottom:40px; border-radius:2px;
+  background:linear-gradient(90deg, transparent, rgba(47,92,255,.7), transparent);
+  background-size:200% 100%;
+  animation:rwLineMove 5s linear infinite;
+}
+@keyframes rwLineMove{ to{ background-position:-200% 0; } }
+
+/* ==========================================================================
+   16. REDUCED MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+  #rw-track-layer{ display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================== LOADING SCREEN ============================== -->
+<div id="rw-loader">
+  <div class="rw-loader-wrap">
+    <div class="rw-loader-line"></div>
+    <div class="rw-loader-word">RACEWORLD</div>
+  </div>
+</div>
+
+<!-- ============================== NAV ============================== -->
+<header id="rw-nav">
+  <div class="rw-container rw-nav-inner">
+    <a href="#rw-hero" class="rw-logo"><span class="rw-logo-dot"></span>RACEWORLD</a>
+    <ul class="rw-nav-links">
+      <li><a href="#rw-hero">Home</a></li>
+      <li><a href="#rw-events">Events</a></li>
+      <li><a href="#rw-live">Live</a></li>
+      <li><a href="#rw-calendar">Calendar</a></li>
+      <li><a href="#rw-categories">Categories</a></li>
+      <li><a href="#rw-media">Videos</a></li>
+      <li><a href="#rw-drivers">Drivers</a></li>
+      <li><a href="#rw-circuits">Circuits</a></li>
+    </ul>
+    <div class="rw-nav-right">
+      <button class="rw-icon-btn" aria-label="Search">⌕</button>
+      <button class="rw-icon-btn" aria-label="Favorites">☆</button>
+      <button class="rw-icon-btn" aria-label="Profile">◐</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================== SCROLL-RACE TRACK (fixed spine) ============================== -->
+<div id="rw-track-layer">
+  <svg id="rw-track-svg" viewBox="0 0 100 1000" preserveAspectRatio="none">
+    <path id="rw-track-path" d="M50,0 C20,120 80,240 50,360 C20,480 80,600 50,720 C20,840 80,920 50,1000"/>
+    <path id="rw-track-progress" d="M50,0 C20,120 80,240 50,360 C20,480 80,600 50,720 C20,840 80,920 50,1000"/>
+  </svg>
+  <svg id="rw-track-car" viewBox="0 0 64 32" style="position:absolute; top:0; left:0;">
+    <g>
+      <path d="M6 22 L12 12 Q16 8 26 8 L44 8 Q52 8 56 16 L58 22 Z" fill="#12151b"/>
+      <rect x="18" y="10" width="16" height="7" rx="2" fill="#e8effc"/>
+      <circle cx="16" cy="23" r="5" fill="#12151b" stroke="#c9d0da" stroke-width="1.5"/>
+      <circle cx="48" cy="23" r="5" fill="#12151b" stroke="#c9d0da" stroke-width="1.5"/>
+      <rect x="55" y="17" width="4" height="3" fill="#d91e36"/>
+    </g>
+  </svg>
+</div>
+
+<!-- ============================== HERO ============================== -->
+<section id="rw-hero">
+  <canvas id="rw-hero-canvas"></canvas>
+  <div class="rw-hero-wash"></div>
+  <div class="rw-hero-content rw-container">
+    <div class="rw-hero-grid">
+      <div>
+        <p class="rw-hero-tagline">EVERY RACE. EVERY CIRCUIT. EVERY MOMENT.</p>
+        <h1 class="rw-hero-title">RACE<br>WORLD</h1>
+        <p class="rw-sub" style="margin-bottom:32px;">One platform for every championship on Earth — Formula&nbsp;1 to MotoGP, WEC to WRC. Discover events, track live sessions, and follow the sport from every angle.</p>
+        <div class="rw-hero-actions">
+          <a href="#rw-events" class="rw-btn rw-btn-primary">Explore Events</a>
+          <a href="#rw-media" class="rw-btn rw-btn-ghost">Watch Racing</a>
+        </div>
+      </div>
+      <div class="rw-hero-car-wrap">
+        <svg id="rw-hero-car" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="200" cy="178" rx="150" ry="10" fill="rgba(18,21,27,.14)"/>
+          <path d="M40 130 L70 80 Q90 60 150 58 L270 58 Q320 60 345 100 L360 130 L360 150 L30 150 Z" fill="#12151b"/>
+          <path d="M95 75 Q110 62 150 62 L250 62 Q285 63 305 90 L300 100 L100 100 Z" fill="#e8effc" opacity=".9"/>
+          <circle cx="105" cy="150" r="26" fill="#12151b" stroke="#c9d0da" stroke-width="4"/>
+          <circle cx="105" cy="150" r="10" fill="#dde2e9"/>
+          <circle cx="300" cy="150" r="26" fill="#12151b" stroke="#c9d0da" stroke-width="4"/>
+          <circle cx="300" cy="150" r="10" fill="#dde2e9"/>
+          <rect x="20" y="118" width="14" height="8" fill="#2f5cff"/>
+          <rect x="358" y="112" width="10" height="10" fill="#d91e36"/>
+        </svg>
+        <div class="rw-speedline" style="top:40%; width:60%;"></div>
+        <div class="rw-speedline" style="top:55%; width:80%;"></div>
+        <div class="rw-speedline" style="top:68%; width:45%;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="rw-scroll-cue"><span class="rw-mouse"></span>SCROLL</div>
+</section>
+
+<!-- ============================== LIVE ON TRACK ============================== -->
+<section id="rw-live" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Right now</p>
+    <h2 class="rw-h2">Live On Track</h2>
+    <p class="rw-sub">Sessions currently underway, tracked from the paddock to your screen.</p>
+
+    <div class="rw-live-grid">
+      <div class="rw-live-card rw-glass">
+        <div class="rw-live-card-top">
+          <span class="rw-live-badge"><span class="rw-live-dot"></span>LIVE</span>
+          <span class="rw-live-session">Race</span>
+        </div>
+        <h3>Formula 1 — Italian Grand Prix</h3>
+        <p class="rw-live-meta">Autodromo Nazionale Monza · Italy</p>
+        <p class="rw-live-meta">Lap 34 of 53 · <span class="rw-tag rw-demo-tag">DEMO DATA</span></p>
+      </div>
+      <div class="rw-live-card rw-glass">
+        <div class="rw-live-card-top">
+          <span class="rw-live-badge"><span class="rw-live-dot"></span>LIVE</span>
+          <span class="rw-live-session">Qualifying</span>
+        </div>
+        <h3>MotoGP — San Marino Grand Prix</h3>
+        <p class="rw-live-meta">Misano World Circuit · Italy</p>
+        <p class="rw-live-meta">Q2 · 6:12 remaining · <span class="rw-tag rw-demo-tag">DEMO DATA</span></p>
+      </div>
+      <div class="rw-live-card rw-glass" style="display:flex;align-items:center;justify-content:center;">
+        <p class="rw-empty-state">LIVE DATA UNAVAILABLE<br><span style="font-weight:400;letter-spacing:0;color:var(--charcoal-45);">Connect a live-timing API to populate this slot.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== NEXT ON THE GRID ============================== -->
+<section id="rw-events" class="rw-section" style="background:var(--pearl-2);">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Coming up</p>
+    <h2 class="rw-h2">Next On The Grid</h2>
+    <p class="rw-sub">The next confirmed sessions across every championship RACEWORLD tracks.</p>
+
+    <div class="rw-events-grid" id="rw-events-grid"><!-- populated by JS from demo data --></div>
+  </div>
+</section>
+
+<!-- ============================== GLOBAL RACING MAP ============================== -->
+<section id="rw-map" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Global command center</p>
+    <h2 class="rw-h2">Racing Around The World</h2>
+    <p class="rw-sub">Every circuit, every continent — hover a marker for the next session there.</p>
+
+    <div class="rw-map-panel rw-glass" style="position:relative;">
+      <svg id="rw-map-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <rect width="1000" height="500" fill="none"/>
+        <!-- simplified continental silhouettes (stylised, not geographically precise) -->
+        <path class="rw-map-land" d="M120 140 L260 120 L300 180 L260 240 L180 260 L120 220 Z"/>
+        <path class="rw-map-land" d="M230 260 L300 250 L330 340 L280 420 L230 380 Z"/>
+        <path class="rw-map-land" d="M440 110 L560 100 L600 160 L560 220 L470 220 L430 170 Z"/>
+        <path class="rw-map-land" d="M470 230 L540 230 L560 320 L520 340 L480 300 Z"/>
+        <path class="rw-map-land" d="M620 120 L800 110 L860 180 L800 250 L680 240 L620 190 Z"/>
+        <path class="rw-map-land" d="M780 340 L860 330 L880 380 L830 400 Z"/>
+        <!-- markers -->
+        <g class="rw-map-marker" data-name="Monza, Italy" data-info="Formula 1 · Sep 21" style="transform-origin:520px 150px;" transform="translate(520,150)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <g class="rw-map-marker" data-name="Suzuka, Japan" data-info="Super GT · Sep 28" transform="translate(830,190)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <g class="rw-map-marker" data-name="Austin, USA" data-info="NASCAR · Oct 4" transform="translate(190,190)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <g class="rw-map-marker" data-name="São Paulo, Brazil" data-info="Formula E · Oct 9" transform="translate(280,340)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <g class="rw-map-marker" data-name="Kyalami, South Africa" data-info="WEC · Oct 15" transform="translate(500,300)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <g class="rw-map-marker" data-name="Bathurst, Australia" data-info="Touring Cars · Oct 20" transform="translate(830,370)">
+          <circle class="rw-marker-pulse" r="6"/><circle class="rw-marker-core" r="4"/>
+        </g>
+        <!-- animated route arcs -->
+        <path d="M520,150 Q670,60 830,190" fill="none" stroke="#2f5cff" stroke-width="1.2" stroke-dasharray="4 5" opacity=".55"/>
+        <path d="M190,190 Q350,260 280,340" fill="none" stroke="#2f5cff" stroke-width="1.2" stroke-dasharray="4 5" opacity=".55"/>
+      </svg>
+      <div class="rw-map-tooltip rw-glass" id="rw-map-tooltip"><strong></strong><span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CATEGORIES ============================== -->
+<section id="rw-categories" class="rw-section" style="background:var(--pearl-2);">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Every discipline</p>
+    <h2 class="rw-h2">Racing Categories</h2>
+    <p class="rw-sub">From open-wheel to off-road — browse the full spread of championships RACEWORLD supports.</p>
+    <div class="rw-cat-scroll" id="rw-cat-scroll"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== CALENDAR ============================== -->
+<section id="rw-calendar" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Plan ahead</p>
+    <h2 class="rw-h2">Racing Calendar</h2>
+    <p class="rw-sub">Filter by category to build your own season at a glance.</p>
+    <div class="rw-cal-toolbar" id="rw-cal-filters"><!-- populated by JS --></div>
+    <div class="rw-cal-list" id="rw-cal-list"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== RACING MEDIA ============================== -->
+<section id="rw-media" class="rw-section" style="background:var(--pearl-2);">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Watch</p>
+    <h2 class="rw-h2">Racing Media</h2>
+    <p class="rw-sub">Highlights, previews and interviews — pulled from official sources when connected.</p>
+    <div class="rw-video-grid" id="rw-video-grid"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== DRIVERS ============================== -->
+<section id="rw-drivers" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">The grid</p>
+    <h2 class="rw-h2">Drivers &amp; Riders</h2>
+    <p class="rw-sub">Championship standings and career stats for the sport's leading names.</p>
+    <div class="rw-people-grid" id="rw-drivers-grid"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== TEAMS ============================== -->
+<section id="rw-teams" class="rw-section" style="background:var(--pearl-2);">
+  <div class="rw-container">
+    <p class="rw-eyebrow">The constructors</p>
+    <h2 class="rw-h2">Teams</h2>
+    <p class="rw-sub">The outfits building the machines behind every result.</p>
+    <div class="rw-people-grid" id="rw-teams-grid"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== CIRCUITS ============================== -->
+<section id="rw-circuits" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">The venues</p>
+    <h2 class="rw-h2">Circuits</h2>
+    <p class="rw-sub">Legendary tracks, lap records, and the corners that define them.</p>
+    <div class="rw-people-grid" id="rw-circuits-grid"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== NEWS ============================== -->
+<section id="rw-news" class="rw-section" style="background:var(--pearl-2);">
+  <div class="rw-container">
+    <p class="rw-eyebrow">From the paddock</p>
+    <h2 class="rw-h2">Latest From The Grid</h2>
+    <div class="rw-news-grid" id="rw-news-grid"><!-- populated by JS --></div>
+  </div>
+</section>
+
+<!-- ============================== MY RACING ============================== -->
+<section id="rw-myracing" class="rw-section">
+  <div class="rw-container">
+    <p class="rw-eyebrow">Personal</p>
+    <h2 class="rw-h2">My Racing</h2>
+    <p class="rw-sub">Your favorites, gathered in one place. Sign in to sync across devices.</p>
+    <div class="rw-myracing-panel rw-glass">
+      <div>
+        <h4 style="font-family:var(--font-display); margin:0 0 12px;">Favorite Drivers</h4>
+        <div class="rw-fav-row"><span>Lena Voss — Formula 1</span><span class="rw-star">★</span></div>
+        <div class="rw-fav-row"><span>Marco Reiss — MotoGP</span><span class="rw-star">★</span></div>
+        <div class="rw-fav-row"><span>Aiko Tanaka — Super GT</span><span class="rw-star">★</span></div>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-display); margin:0 0 12px;">Favorite Events</h4>
+        <div class="rw-fav-row"><span>Monaco Grand Prix</span><span class="rw-star">★</span></div>
+        <div class="rw-fav-row"><span>24 Hours of Le Mans</span><span class="rw-star">★</span></div>
+        <div class="rw-fav-row"><span>Suzuka 8 Hours</span><span class="rw-star">★</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FINISH LINE ============================== -->
+<section id="rw-finish">
+  <div class="rw-finish-glow"></div>
+  <div class="rw-container" style="position:relative;">
+    <div class="rw-finish-checker"></div>
+    <h2>You've reached the finish line.</h2>
+    <p>That's the full lap — from live sessions to the paddock's latest. Every race, every circuit, every moment starts here.</p>
+    <a href="#rw-hero" class="rw-btn rw-btn-primary">Back To Start</a>
+    <div class="rw-finish-checker" style="margin-top:36px;"></div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer id="rw-footer">
+  <div class="rw-container">
+    <div class="rw-footer-line"></div>
+    <div class="rw-footer-top">
+      <div class="rw-footer-brand">
+        <a href="#rw-hero" class="rw-logo"><span class="rw-logo-dot"></span>RACEWORLD</a>
+        <p>Every race. Every circuit. Every moment.</p>
+      </div>
+      <div class="rw-footer-cols">
+        <div class="rw-footer-col">
+          <h5>PLATFORM</h5>
+          <a href="#rw-events">Events</a>
+          <a href="#rw-calendar">Calendar</a>
+          <a href="#rw-categories">Categories</a>
+          <a href="#rw-live">Live</a>
+        </div>
+        <div class="rw-footer-col">
+          <h5>EXPLORE</h5>
+          <a href="#rw-media">Videos</a>
+          <a href="#rw-drivers">Drivers</a>
+          <a href="#rw-teams">Teams</a>
+          <a href="#rw-circuits">Circuits</a>
+        </div>
+        <div class="rw-footer-col">
+          <h5>COMPANY</h5>
+          <a href="#">About</a>
+          <a href="#">Contact</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+        </div>
+      </div>
+    </div>
+    <div class="rw-footer-bottom">
+      <span>© 2026 RACEWORLD. Demo build for presentation purposes.</span>
+      <span>Instagram · X · YouTube</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ==========================================================================
+   MODULE: demo data (data/*.js in a real project — see README)
+   ========================================================================== */
+const DEMO_TAG = '<span class="rw-tag rw-demo-tag">DEMO DATA</span>';
+
+const CATEGORIES = [
+  ['🏎️','Formula 1'],['🏁','Formula 2'],['🏁','Formula 3'],['⚡','Formula E'],
+  ['🏎️','IndyCar'],['🏁','NASCAR'],['🏍️','MotoGP'],['🏍️','Moto2'],
+  ['🏍️','Moto3'],['🌧️','WRC'],['⏱️','WEC'],['🚗','GT Racing'],
+  ['🚗','GT3'],['🚗','Super GT'],['🏍️','Superbike'],['🪖','Motocross'],
+  ['🌪️','Rallycross'],['💨','Drag Racing'],['🏎️','Karting'],['🚙','Touring Cars'],
+  ['⛰️','Off-Road'],['🔋','Electric Racing']
+];
+
+const EVENTS = [
+  {cat:'Formula 1', name:'Singapore Grand Prix', circuit:'Marina Bay Street Circuit', country:'Singapore', date:'Oct 4', time:'13:00 UTC', countdown:'12d 4h'},
+  {cat:'MotoGP', name:'Grand Prix of the Americas', circuit:'Circuit of the Americas', country:'USA', date:'Oct 12', time:'19:00 UTC', countdown:'20d 9h'},
+  {cat:'WEC', name:'6 Hours of Fuji', circuit:'Fuji Speedway', country:'Japan', date:'Oct 19', time:'05:00 UTC', countdown:'27d 1h'},
+  {cat:'NASCAR', name:'South Point 400', circuit:'Las Vegas Motor Speedway', country:'USA', date:'Oct 5', time:'23:30 UTC', countdown:'13d 15h'},
+  {cat:'Formula E', name:'São Paulo E-Prix', circuit:'Sambódromo do Anhembi', country:'Brazil', date:'Oct 9', time:'17:00 UTC', countdown:'17d 8h'},
+  {cat:'WRC', name:'Rally Chile', circuit:'Bío Bío Region', country:'Chile', date:'Oct 16', time:'—', countdown:'24d'},
+];
+
+const DRIVERS = [
+  {name:'Lena Voss', team:'Apex Motorsport · F1', wins:14, poles:9},
+  {name:'Marco Reiss', team:'Velocity Racing · MotoGP', wins:8, poles:11},
+  {name:'Aiko Tanaka', team:'Nova GT · Super GT', wins:6, poles:4},
+  {name:'Dylan Cross', team:'Redline Racing · NASCAR', wins:5, poles:3},
+];
+const TEAMS = [
+  {name:'Apex Motorsport', country:'UK · Formula 1', wins:112, champs:6},
+  {name:'Velocity Racing', country:'Italy · MotoGP', wins:74, champs:4},
+  {name:'Nova GT', country:'Japan · Super GT', wins:38, champs:2},
+  {name:'Redline Racing', country:'USA · NASCAR', wins:96, champs:5},
+];
+const CIRCUITS = [
+  {name:'Monza', country:'Italy', length:'5.79 km', corners:11},
+  {name:'Suzuka', country:'Japan', length:'5.81 km', corners:18},
+  {name:'Circuit of the Americas', country:'USA', length:'5.51 km', corners:20},
+  {name:'Bathurst', country:'Australia', length:'6.21 km', corners:23},
+];
+const NEWS = [
+  {tag:'Championship', title:'Title fight tightens with four rounds remaining', excerpt:'Three drivers now sit within a single win of the championship lead heading into the final stretch.'},
+  {tag:'Teams', title:'Nova GT confirms new livery for season finale', excerpt:'The Japanese outfit unveils a commemorative design ahead of its home race.'},
+  {tag:'Circuits', title:'Resurfacing works completed ahead of October round', excerpt:'Track officials report improved grip levels following pre-season testing.'},
+];
+
+/* ==========================================================================
+   MODULE: render helpers
+   ========================================================================== */
+function renderEvents(){
+  const grid = document.getElementById('rw-events-grid');
+  grid.innerHTML = EVENTS.map(e => `
+    <div class="rw-event-card">
+      <div class="rw-event-media">
+        <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice">
+          <rect width="300" height="150" fill="#e8effc"/>
+          <path d="M0 110 L60 90 L120 105 L180 80 L240 100 L300 85 L300 150 L0 150 Z" fill="#c9d0da" opacity=".7"/>
+        </svg>
+      </div>
+      <div class="rw-event-body">
+        <div class="rw-event-cat">${e.cat.toUpperCase()}</div>
+        <h3>${e.name}</h3>
+        <div class="rw-event-meta">${e.circuit} · ${e.country}<br>${e.date} · ${e.time}</div>
+        <div class="rw-event-foot">
+          <span class="rw-countdown">⏱ ${e.countdown}</span>
+          ${DEMO_TAG}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderCategories(){
+  const wrap = document.getElementById('rw-cat-scroll');
+  wrap.innerHTML = CATEGORIES.map(([icon,name]) => `
+    <div class="rw-cat-card">
+      <span class="rw-cat-icon">${icon}</span>
+      <h4>${name}</h4>
+      <span>Explore →</span>
+    </div>`).join('');
+}
+
+const CAL_CATS = ['All','Formula 1','MotoGP','WEC','NASCAR','Formula E','WRC'];
+function renderCalendar(active='All'){
+  const filters = document.getElementById('rw-cal-filters');
+  filters.innerHTML = CAL_CATS.map(c => `<button class="rw-filter-chip ${c===active?'is-active':''}" data-cat="${c}">${c}</button>`).join('');
+  filters.querySelectorAll('.rw-filter-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=> renderCalendar(btn.dataset.cat));
+  });
+
+  const list = document.getElementById('rw-cal-list');
+  const rows = EVENTS.filter(e => active==='All' || e.cat===active);
+  list.innerHTML = rows.length ? rows.map(e => `
+    <div class="rw-cal-row">
+      <div class="rw-cal-date"><b>${e.date.split(' ')[1]}</b>${e.date.split(' ')[0]}</div>
+      <div class="rw-cal-info"><h4>${e.name}</h4><span>${e.cat} · ${e.circuit}, ${e.country}</span></div>
+      ${DEMO_TAG}
+    </div>`).join('') : `<div class="rw-empty-state">NO EVENTS AVAILABLE</div>`;
+}
+
+function renderVideos(){
+  const grid = document.getElementById('rw-video-grid');
+  const items = [
+    {title:'Singapore GP — Race Highlights', meta:'Formula 1 · 8:24'},
+    {title:'COTA Track Guide', meta:'MotoGP · 5:10'},
+    {title:'', meta:''}, // demonstrates "no video available" state
+  ];
+  grid.innerHTML = items.map(v => v.title ? `
+    <div class="rw-video-card">
+      <div class="rw-video-thumb">
+        <div class="rw-play-btn">▶</div>
+        <span class="rw-video-dur">${v.meta.split('·')[1].trim()}</span>
+      </div>
+      <div class="rw-video-body"><h4>${v.title}</h4><span>${v.meta.split('·')[0].trim()}</span></div>
+    </div>` : `
+    <div class="rw-video-card">
+      <div class="rw-video-thumb" style="background:var(--pearl-2);">
+        <span style="color:var(--charcoal-45); font-family:var(--font-display); font-size:12px; font-weight:600; letter-spacing:.04em;">NO VIDEO AVAILABLE</span>
+      </div>
+      <div class="rw-video-body"><h4>Coming soon</h4><span>Connect a video API to populate this slot</span></div>
+    </div>`).join('');
+}
+
+function renderPeople(){
+  const initials = n => n.split(' ').map(w=>w[0]).join('');
+  document.getElementById('rw-drivers-grid').innerHTML = DRIVERS.map(d => `
+    <div class="rw-driver-card">
+      <div class="rw-driver-avatar">${initials(d.name)}</div>
+      <h4>${d.name}</h4><span>${d.team}</span>
+      <div class="rw-driver-stats">
+        <div><b>${d.wins}</b><small>WINS</small></div>
+        <div><b>${d.poles}</b><small>POLES</small></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('rw-teams-grid').innerHTML = TEAMS.map(t => `
+    <div class="rw-driver-card">
+      <div class="rw-driver-avatar" style="background:linear-gradient(150deg,#12151b,#3a4050);">${initials(t.name)}</div>
+      <h4>${t.name}</h4><span>${t.country}</span>
+      <div class="rw-driver-stats">
+        <div><b>${t.wins}</b><small>WINS</small></div>
+        <div><b>${t.champs}</b><small>TITLES</small></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('rw-circuits-grid').innerHTML = CIRCUITS.map(c => `
+    <div class="rw-driver-card">
+      <div class="rw-driver-avatar" style="background:linear-gradient(150deg,#d91e36,#f0555f); border-radius:8px;">🏁</div>
+      <h4>${c.name}</h4><span>${c.country}</span>
+      <div class="rw-driver-stats">
+        <div><b>${c.length}</b><small>LENGTH</small></div>
+        <div><b>${c.corners}</b><small>CORNERS</small></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderNews(){
+  document.getElementById('rw-news-grid').innerHTML = NEWS.map(n => `
+    <div class="rw-news-card">
+      <div class="rw-news-media"></div>
+      <div class="rw-news-body">
+        <span>${n.tag.toUpperCase()}</span>
+        <h4>${n.title}</h4>
+        <p>${n.excerpt}</p>
+      </div>
+    </div>`).join('');
+}
+
+renderEvents(); renderCategories(); renderCalendar(); renderVideos(); renderPeople(); renderNews();
+
+/* ==========================================================================
+   MODULE: loading screen
+   ========================================================================== */
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('rw-loader').classList.add('is-hidden'), 700);
+});
+
+/* ==========================================================================
+   MODULE: nav glass transition
+   ========================================================================== */
+const nav = document.getElementById('rw-nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('is-scrolled', window.scrollY > 40);
+}, {passive:true});
+
+/* ==========================================================================
+   MODULE: map tooltip interaction
+   ========================================================================== */
+const tooltip = document.getElementById('rw-map-tooltip');
+document.querySelectorAll('.rw-map-marker').forEach(marker => {
+  marker.addEventListener('mouseenter', (e) => {
+    const svg = document.getElementById('rw-map-svg');
+    const pt = svg.createSVGPoint();
+    const box = marker.getBBox();
+    const matrix = marker.getCTM();
+    const svgRect = svg.getBoundingClientRect();
+    const cx = box.x + box.width/2, cy = box.y + box.height/2;
+    const transformed = pt.matrixTransform(matrix);
+    const xPct = (transformed.x / svg.viewBox.baseVal.width) * 100;
+    const yPct = (transformed.y / svg.viewBox.baseVal.height) * 100;
+    tooltip.style.left = xPct + '%';
+    tooltip.style.top = yPct + '%';
+    tooltip.querySelector('strong').textContent = marker.dataset.name;
+    tooltip.querySelector('span').textContent = marker.dataset.info;
+    tooltip.classList.add('is-visible');
+  });
+  marker.addEventListener('mouseleave', () => tooltip.classList.remove('is-visible'));
+});
+
+/* ==========================================================================
+   MODULE: ShaderBackground — lightweight WebGL "liquid metal" gradient
+   (Stands in for the ShaderGradient package in this static build — see README
+   for swapping in the real @shadergradient/react package inside a Next.js app)
+   ========================================================================== */
+(function ShaderBackground(){
+  const canvas = document.getElementById('rw-hero-canvas');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if(!gl){ canvas.style.background = 'linear-gradient(135deg,#eef1f5,#dde7fb)'; return; }
+
+  const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.0,1.0); }`;
+  const fs = `
+    precision highp float;
+    uniform vec2 res; uniform float t;
+    // simple layered noise-ish liquid metal look using sines
+    float wave(vec2 uv, float f, float s, float a){
+      return sin(uv.x*f + t*s) * cos(uv.y*f*0.7 - t*s*0.8) * a;
+    }
+    void main(){
+      vec2 uv = gl_FragCoord.xy / res.xy;
+      float n = 0.0;
+      n += wave(uv, 3.0, 0.25, 0.5);
+      n += wave(uv, 6.0, 0.4, 0.25);
+      n += wave(uv*1.5, 9.0, 0.15, 0.15);
+      vec3 pearl   = vec3(0.965,0.968,0.976);
+      vec3 silver  = vec3(0.79,0.815,0.855);
+      vec3 blue    = vec3(0.66,0.74,0.98);
+      vec3 red     = vec3(0.85,0.55,0.55);
+      float mixer = uv.x*0.6 + uv.y*0.4 + n*0.35;
+      vec3 color = mix(pearl, silver, smoothstep(0.1,0.75,mixer));
+      color = mix(color, blue, smoothstep(0.45,0.95,mixer + n*0.3) * 0.55);
+      color = mix(color, red, smoothstep(0.75,1.05,mixer) * 0.12);
+      gl_FragColor = vec4(color, 1.0);
+    }`;
+
+  function compile(type, src){
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pLoc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(pLoc);
+  gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+
+  const resLoc = gl.getUniformLocation(prog, 'res');
+  const tLoc = gl.getUniformLocation(prog, 't');
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 768 ? 1 : 1.5);
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    gl.viewport(0,0,canvas.width, canvas.height);
+    gl.uniform2f(resLoc, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let frame;
+  let visible = true;
+  const obs = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }, {threshold:0});
+  obs.observe(canvas);
+
+  function draw(time){
+    if(visible){
+      gl.uniform1f(tLoc, reduced ? 0 : time*0.001);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    if(!reduced) frame = requestAnimationFrame(draw);
+  }
+  draw(0);
+  if(reduced){ gl.uniform1f(tLoc, 0.6); gl.drawArrays(gl.TRIANGLE_STRIP,0,4); }
+})();
+
+/* ==========================================================================
+   MODULE: ScrollRace — drives the fixed racing-car marker along the SVG path
+   using scroll progress across the entire homepage.
+   ========================================================================== */
+(function ScrollRace(){
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const path = document.getElementById('rw-track-progress');
+  const fullPath = document.getElementById('rw-track-path');
+  const car = document.getElementById('rw-track-car');
+  const layer = document.getElementById('rw-track-layer');
+  if(!path || window.innerWidth < 900) return; // hidden on mobile per spec
+
+  const totalLen = fullPath.getTotalLength();
+  path.style.strokeDasharray = totalLen;
+  path.style.strokeDashoffset = totalLen;
+
+  function update(progress){
+    progress = Math.min(Math.max(progress,0),1);
+    path.style.strokeDashoffset = totalLen * (1 - progress);
+    const svgH = 1000; // viewBox height
+    const point = fullPath.getPointAtLength(progress * totalLen);
+    const nextPoint = fullPath.getPointAtLength(Math.min(progress*totalLen + 1, totalLen));
+    const angle = Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x) * (180/Math.PI);
+    const layerRect = layer.getBoundingClientRect();
+    const scaleX = layerRect.width / 100;
+    const scaleY = layerRect.height / svgH;
+    const x = point.x * scaleX - 17;
+    const y = point.y * scaleY - 16;
+    car.style.transform = `translate(${x}px, ${y}px) rotate(${angle}deg)`;
+  }
+  update(0);
+
+  if(reduced){ update(0.02); return; } // static position, no scroll-linked motion
+
+  function onScroll(){
+    const doc = document.documentElement;
+    const scrollable = doc.scrollHeight - window.innerHeight;
+    const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+    requestAnimationFrame(() => update(progress));
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+})();
+
+/* ==========================================================================
+   MODULE: GSAP ScrollTrigger — hero exit + section reveal for finish line
+   (GSAP loaded via CDN above; guarded in case the script fails to load,
+   e.g. offline preview)
+   ========================================================================== */
+if(window.gsap && window.ScrollTrigger){
+  gsap.registerPlugin(ScrollTrigger);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if(!reduced){
+    gsap.to('#rw-hero-car', {
+      y: -40, ease:'none',
+      scrollTrigger:{ trigger:'#rw-hero', start:'top top', end:'bottom top', scrub:true }
+    });
+    gsap.utils.toArray('.rw-speedline').forEach((el,i) => {
+      gsap.to(el, {
+        opacity: 0.9, x: -30, ease:'none',
+        scrollTrigger:{ trigger:'#rw-hero', start:'top top', end:'60% top', scrub:true }
+      });
+    });
+    gsap.from('#rw-finish h2, #rw-finish p, #rw-finish .rw-btn', {
+      y: 24, opacity: 0, duration: .8, stagger:.08, ease:'power2.out',
+      scrollTrigger:{ trigger:'#rw-finish', start:'top 70%' }
+    });
+  }
+}
+</script>
+</body>
+</html>
